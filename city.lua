@@ -37,6 +37,27 @@ local money_text = nil
 local customer_payment = 10
 
 
+function updateCity()
+    picked = city_elements[ math.random( #city_elements ) ]
+    retry_counter = 0
+    while picked.type ~= 1 and picked.type ~= 2
+    do
+        picked = city_elements[ math.random( #city_elements ) ]
+        retry_counter = retry_counter + 1
+        if retry_counter < 20 then
+            return
+        end
+    end
+    print("Picked index",picked,picked.index, picked.type)
+    picked.type = picked.type + 1
+    if picked.type == 2 then
+        picked = swapImage(picked, "graphics/house.png",tile_size,tile_size)
+    else
+        picked = swapImage(picked, "graphics/bloc.png",tile_size,tile_size)
+    end
+    refreshScene()
+end
+
 function swapImage(oldImage, imageFile, width, height)
     local newImage = display.newImageRect(imageFile, width, height)
     newImage.x = oldImage.x
@@ -93,11 +114,47 @@ function changeVisCable(path)
     refreshScene()
 end
 
+local function spriteListener(event)
+    if event.target.frame == 36 then
+        event.target.alpha = 0.01 --hides 
+        event.target:removeSelf()
+    end
+end
+
+function coinAnim()
+    -- above each index of customer (end of a cable) do rotating coin for 1 sec
+    local sheetData = {
+        width = 16,
+        height = 16,
+        numFrames = 36,
+        sheetContentWidth = 576,
+        sheetContentHeight = 16,
+    }
+
+    local sequenceData = {
+        {
+            name = "normal", start=1, count=36, time=2400, loopCount=1
+        }
+    }
+
+    for i,cab in ipairs(cables) do
+        last = cab[#cab]
+
+        local money_anim = display.newSprite(graphics.newImageSheet("graphics/coin.png",sheetData), sequenceData)
+        money_anim.x = city_elements[last].x
+        money_anim.y = city_elements[last].y-tile_size/2
+        money_anim:addEventListener("sprite", spriteListener)
+
+        money_anim:play()
+    end 
+end
+
 function updateMoneyVisual()
     if money_text then
         money_text:removeSelf()
     end
     money_text = display.newText(money,halfW, screenH-60)
+    money_text:setFillColor(0,0,0,1)
 end
 
 function refreshScene()
@@ -129,20 +186,49 @@ function printAllCables()
 end
 
 function discardMoney(touch_path)
+    money_old = money
     money = money - #touch_path*cable_cost
+    if money < 0 then
+        money = money_old
+        return false
+    end
     print("Money status after construction", money)
     updateMoneyVisual()
+    return true
 end
 
 function addPath()
-    cables[#cables+1] = touch_path
 
-    -- TO CHANGE for now lets state that we will discard len(cable)*10 from money
-    discardMoney(touch_path)
+    if discardMoney(touch_path) == true then
+        cables[#cables+1] = touch_path
+    else
+        cleanuppath()
+        return
+    end
     changeVisCable(touch_path)
     cleanuppath()
 
     printAllCables()
+end
+
+function checkIfAlreadyHasCable(index)
+    for i,cab in ipairs(cables) do
+        for i,elem in ipairs(cab) do
+            if elem == index then
+                return true
+            end
+        end
+    end
+    return false
+end
+
+function checkAlreadyBeen(index) 
+    for i,elem in ipairs(touch_path) do
+        if elem == index then
+            return true
+        end
+    end
+    return false
 end
 
 function touchlistener(event)
@@ -175,15 +261,17 @@ function touchlistener(event)
             -- TODO check the path if already not been here and do not add to path or just stop
 
             if #touch_path > 1 then
-                print("asfasf",#touch_path)
                 if city_elements[touch_last].type == 2 or city_elements[touch_last].type == 3 or city_elements[touch_last].type == 5 then
-                    addPath()
+                    -- check if start != stop
+                    if city_elements[touch_last].index ~= city_elements[touch_start].index and checkIfAlreadyHasCable(touch_last) == false then
+                        addPath()
+                    end
                     return true
                 end
             end
 
             touch_last = event.target.index
-            if event.target.type == 1 then
+            if event.target.type == 1 or checkAlreadyBeen(touch_last) == true then
                 cleanuppath()
                 return true
             elseif event.target.type == 2 or event.target.type == 3 or event.target.type == 5 then
@@ -199,11 +287,11 @@ function touchlistener(event)
         if touch_start == nil then
             return true
         end
-        if event.target.type < 1 or event.target.type == 1 then
+        if event.target.type < 1 or event.target.type == 1 or city_elements[touch_last].index == city_elements[touch_start].index
+         or checkIfAlreadyHasCable(touch_last) == true then
             cleanuppath()
             return true
         end
-
         addPath()
     end
     return true
@@ -301,6 +389,7 @@ function updateMoneyFromCustomers()
     money = money + #cables*customer_payment
     print("Money status", money)
     updateMoneyVisual()
+    coinAnim()
 end
 
 function scene:show( event )
@@ -310,12 +399,12 @@ function scene:show( event )
 	if phase == "will" then
 		-- Called when the scene is still off screen and is about to move on screen
 	elseif phase == "did" then
-		-- Called when the scene is now on screen
-		-- 
-		-- INSERT code here to make the scene come alive
-        -- e.g. start timers, begin animation, play audio, etc.
         updateMoneyVisual()
+
         timer.performWithDelay(1000*10, updateMoneyFromCustomers, 0)
+
+        
+        timer.performWithDelay(1000*20, updateCity, 0)
 
 		physics.start()
 	end
