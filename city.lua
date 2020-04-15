@@ -16,6 +16,7 @@ local physics = require "physics"
 --------------------------------------------
 
 -- forward declarations and other locals
+
 local screenW, screenH, halfW = display.actualContentWidth, display.actualContentHeight, display.contentCenterX
 
 local city_elements = nil
@@ -35,6 +36,9 @@ local money = 200
 local cable_cost = 10
 local money_text = nil
 local customer_payment = 10
+
+-- cables deefinitions
+local actual_cable = nil
 
 
 function updateCity()
@@ -98,7 +102,13 @@ function drawCable(last_x,last_y,path,elem, start, i_end)
     end
 
     local new_cable = display.newLine(last_x,last_y,end_point_x,end_point_y)
-    new_cable:setStrokeColor(0.1, 0.8, 1,1) -- cyan like
+    if actual_cable == "cyan" then
+        new_cable:setStrokeColor(0.1, 0.8, 1,1) -- cyan like
+    elseif actual_cable == "green" then
+        new_cable:setStrokeColor(0.1, 1, 0.1,1) -- light green
+    elseif actual_cable == "pink" then
+        new_cable:setStrokeColor(1, 0.2, 1,1) -- pink
+    end
     new_cable.strokeWidth = 4
     return end_point_x, end_point_y
 end
@@ -317,6 +327,14 @@ function scene:create( event )
     
     sceneGroup:insert( background )
 
+    -- bottom rect with actual selected cable
+    local actual_cable_button = display.newImageRect( "graphics/button-over.png", 50, 30 )
+	actual_cable_button.x = screenW - 30
+    actual_cable_button.y = screenH - 60
+    actual_cable_button:addEventListener( "touch", enableMenuListener )
+    
+    sceneGroup:insert( actual_cable_button )
+
     system.activate( "multitouch" )
     
     cables = {} -- cable need to have start, end and path, also type
@@ -392,22 +410,101 @@ function updateMoneyFromCustomers()
     coinAnim()
 end
 
+function menu_slide_panel()
+
+    --TODO change panel to have smth relevant and to show/hide on slide from user/button
+    inv_panel.background = display.newRect( 0, 0, inv_panel.width, inv_panel.height )
+    inv_panel.background:setFillColor( 0, 0.25, 0.5 )
+    inv_panel.background:addEventListener( "touch", menuTouchListener )
+    inv_panel:insert( inv_panel.background )
+
+    y_shift = 30
+    y = 0
+    -- title menu
+    inv_panel.title = display.newText( "menu", 0, y, native.systemFontBold, 18 )
+    inv_panel.title:setFillColor( 1, 1, 1 )
+    inv_panel:insert( inv_panel.title )
+    y = y+y_shift
+
+    --cables
+    inv_panel.cables = display.newText( "cables", 0, y, native.systemFont, 12 )
+    inv_panel.cables:setFillColor( 1, 1, 1 )
+    inv_panel:insert( inv_panel.cables )
+    y = y+y_shift
+
+    inv_panel.cable = display.newRect(0,y,20,10)
+    inv_panel.cable.name = "cyan"
+    inv_panel.cable:setFillColor(0.1, 0.8, 1,1) -- cyan like
+    inv_panel.cable:addEventListener( "touch", menuCableTouchListener )
+    inv_panel:insert( inv_panel.cable )
+    y = y+y_shift
+
+    inv_panel.cable2 = display.newRect(0,y,20,10)
+    inv_panel.cable2.name = "pink"
+    inv_panel.cable2:setFillColor(1, 0.2, 1,1) -- pink
+    inv_panel.cable2:addEventListener( "touch", menuCableTouchListener )
+    inv_panel:insert( inv_panel.cable2 )
+    y = y+y_shift
+
+    inv_panel.cable3 = display.newRect(0,y,20,10)
+    inv_panel.cable3.name = "green"
+    inv_panel.cable3:setFillColor(0.1, 1, 0.1,1) -- light green
+    inv_panel.cable3:addEventListener( "touch", menuCableTouchListener )
+    inv_panel:insert( inv_panel.cable3 )
+    y = y+y_shift
+
+    -- sceneGroup:insert( inv_panel )
+    -- inv_panel:toFront()
+end
+
+function actualCable(name)
+    actual_cable = name
+    local cable_preview = display.newLine(screenW - 45,screenH - 60,screenW-15,screenH - 60)
+    if name == "cyan" then
+        cable_preview:setStrokeColor(0.1, 0.8, 1,1) -- cyan like
+    elseif name == "green" then
+        cable_preview:setStrokeColor(0.1, 1, 0.1,1) -- light green
+    elseif name == "pink" then
+        cable_preview:setStrokeColor(1, 0.2, 1,1) -- pink
+    end
+    cable_preview.strokeWidth = 4
+end
+
 function scene:show( event )
 	local sceneGroup = self.view
 	local phase = event.phase
 	
 	if phase == "will" then
 		-- Called when the scene is still off screen and is about to move on screen
-	elseif phase == "did" then
+    elseif phase == "did" then
+        actualCable("cyan")
         updateMoneyVisual()
 
-        timer.performWithDelay(1000*10, updateMoneyFromCustomers, 0)
-
-        
+        timer.performWithDelay(1000*10, updateMoneyFromCustomers, 0)     
         timer.performWithDelay(1000*20, updateCity, 0)
 
-		physics.start()
+        physics.start()
+
+        menu_slide_panel()
 	end
+end
+
+function enableMenuListener(event)
+    inv_panel:show()
+    return true
+end
+
+function menuTouchListener(event)
+    print("Touched in menu", event.target)
+    return true
+end
+
+function menuCableTouchListener(event)
+    print("Touched cable in menu", event.target.name)
+    -- TODO set actual cable
+    actualCable(event.target.name)
+    inv_panel:hide()
+    return true
 end
 
 function scene:hide( event )
