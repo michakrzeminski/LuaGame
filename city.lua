@@ -75,7 +75,7 @@ function swapImage(oldImage, imageFile, width, height)
 
 end
 
-function drawCable(last_x,last_y,path,elem, start, i_end)
+function drawCable(cab_id,last_x,last_y,path,elem, start, i_end)
     if last_x == nil or last_y == nil then
         last_x = city_elements[elem].x
         last_y = city_elements[elem].y
@@ -110,14 +110,16 @@ function drawCable(last_x,last_y,path,elem, start, i_end)
         new_cable:setStrokeColor(1, 0.2, 1,1) -- pink
     end
     new_cable.strokeWidth = 4
+    cables[cab_id].vis[start] = new_cable
     return end_point_x, end_point_y
 end
 
-function changeVisCable(path)
+function changeVisCable(cab_id, path)
     local last_x, last_y = nil, nil
+    cables[cab_id].vis = {}
     for i,elem in ipairs(path) do
         if i ~= #path then
-            last_x, last_y = drawCable(last_x, last_y, path, elem, i, i+1)
+            last_x, last_y = drawCable(cab_id, last_x, last_y, path, elem, i, i+1)
             city_elements[elem].street_state = 1
         end
     end
@@ -170,6 +172,7 @@ end
 function refreshScene()
     for i,elem in ipairs(city_elements) do
         elem:addEventListener( "touch", touchlistener )
+        elem:addEventListener( "tap", taplistener )
         sceneGroup:insert( elem )
     end
 end
@@ -208,24 +211,31 @@ function discardMoney(touch_path)
 end
 
 function addPath()
-
     if discardMoney(touch_path) == true then
         cables[#cables+1] = touch_path
     else
         cleanuppath()
         return
     end
-    changeVisCable(touch_path)
+    changeVisCable(#cables,touch_path)
     cleanuppath()
 
     printAllCables()
 end
 
-function checkIfAlreadyHasCable(index)
+function checkIfAlreadyHasCable(index, endings)
     for i,cab in ipairs(cables) do
-        for i,elem in ipairs(cab) do
+        for j,elem in ipairs(cab) do
             if elem == index then
-                return true
+                if endings == true then
+                    if j == 1 or j == #cab then
+                        return false
+                    else
+                        return i
+                    end
+                else
+                    return i
+                end
             end
         end
     end
@@ -239,6 +249,35 @@ function checkAlreadyBeen(index)
         end
     end
     return false
+end
+
+function refreshCablesState()
+    for i,elem in ipairs(city_elements) do
+        elem.street_state = 0
+    end
+    for i,cab in ipairs(cables) do
+        for j,elem in ipairs(cab) do
+            city_elements[elem].street_state = 1
+        end
+    end
+end
+
+function taplistener(event)
+    if event.numTaps == 2 then
+        i = checkIfAlreadyHasCable(event.target.index, true) 
+        if i ~= false then
+            print("dadassdfsdf",i)
+            print("as",cables[i].vis)
+            for i,elem in ipairs(cables[i].vis) do
+                print("as",i,elem)
+                elem:removeSelf()
+            end
+            cables[i] = nil
+            printAllCables()
+            --TODO consider if want to give back money to player
+            refreshCablesState()
+        end
+    end
 end
 
 function touchlistener(event)
@@ -273,7 +312,7 @@ function touchlistener(event)
             if #touch_path > 1 then
                 if city_elements[touch_last].type == 2 or city_elements[touch_last].type == 3 or city_elements[touch_last].type == 5 then
                     -- check if start != stop
-                    if city_elements[touch_last].index ~= city_elements[touch_start].index and checkIfAlreadyHasCable(touch_last) == false then
+                    if city_elements[touch_last].index ~= city_elements[touch_start].index and checkIfAlreadyHasCable(touch_last,false) == false then
                         addPath()
                     end
                     return true
@@ -297,8 +336,9 @@ function touchlistener(event)
         if touch_start == nil then
             return true
         end
+        print("fsdfsdfsd",checkIfAlreadyHasCable(toch_last))
         if event.target.type < 1 or event.target.type == 1 or city_elements[touch_last].index == city_elements[touch_start].index
-         or checkIfAlreadyHasCable(touch_last) == true then
+         or checkIfAlreadyHasCable(touch_last,false) ~= false then
             cleanuppath()
             return true
         end
@@ -398,7 +438,7 @@ function scene:create( event )
         end
     end
 
-    refreshScene(sceneGroup)
+    refreshScene()
 end
 
 function updateMoneyFromCustomers()
@@ -424,6 +464,12 @@ function menu_slide_panel()
     inv_panel.title = display.newText( "menu", 0, y, native.systemFontBold, 18 )
     inv_panel.title:setFillColor( 1, 1, 1 )
     inv_panel:insert( inv_panel.title )
+    y = y+y_shift
+
+    -- title menu
+    inv_panel.remove = display.newText( "Double-click to\n remove cable", 0, y, native.systemFont, 12 )
+    inv_panel.remove:setFillColor( 1, 1, 1 )
+    inv_panel:insert( inv_panel.remove )
     y = y+y_shift
 
     --cables
