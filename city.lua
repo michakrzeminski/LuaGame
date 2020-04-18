@@ -134,6 +134,37 @@ local function spriteListener(event)
     end
 end
 
+function spriteListener2(event)
+    print("sdfsdfd")
+    if event.target.frame == 9 then
+        print("sdfsdfdw",event)
+        event.target:removeSelf()
+    end
+end
+
+function levelupAnim()
+    local sheetData = {
+        width = 64,
+        height = 64,
+        numFrames = 8,
+        sheetContentWidth = 512,
+        sheetContentHeight = 64,
+    }
+
+    local sequenceData = {
+        {
+            name = "normal", start=1, count=9, time=2000, loopCount=1
+        }
+    }
+
+    local level_anim = display.newSprite(graphics.newImageSheet("graphics/level_up.png",sheetData), sequenceData)
+    level_anim.x = screenW/2
+    level_anim.y = 100
+    level_anim:addEventListener("sprite", spriteListener2)
+    level_anim:play()
+
+end
+
 function coinAnim()
     -- above each index of customer (end of a cable) do rotating coin for 1 sec
     local sheetData = {
@@ -227,6 +258,7 @@ function checkLevelUp()
         if points >= threshold then
             print("Level up")
             --TODO cool animation
+            levelupAnim()
             current_lvl = current_lvl + 1
             menu_slide_panel()
         end
