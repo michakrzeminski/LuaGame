@@ -42,7 +42,7 @@ local points_text = nil
 local customer_payment = 10
 
 -- cables definitions
-local actual_cable = nil
+local actual_cable = "white"
 
 local current_lvl = 1
 
@@ -296,12 +296,17 @@ end
 
 function taplistener(event)
     if event.numTaps == 2 then
-        i = checkIfAlreadyHasCable(event.target.index, true) 
-        if i ~= false then
-            for i,elem in ipairs(cables[i].vis) do
+        print("double click")
+        printAllCables()
+        index = checkIfAlreadyHasCable(event.target.index, true) 
+        print(index)
+        if index ~= false then
+            for _,elem in ipairs(cables[index].vis) do
+                print("TOREMOVE", elem,cables[index].name)
                 elem:removeSelf()
             end
-            cables[i] = nil
+            -- cables[i] = nil
+            table.remove(cables,index)
             printAllCables()
             --TODO consider if want to give back money to player
             refreshCablesState()
@@ -311,6 +316,7 @@ end
 
 function touchlistener(event)
     if ( event.phase == "began" ) then
+        move_flag = false
         -- Code executed when the button is touched
         print( "object touched = ",event.target.x, event.target.y, event.target.type, event.target.street_state) 
         
@@ -331,6 +337,7 @@ function touchlistener(event)
         end
 
     elseif ( event.phase == "moved" ) then
+        move_flag = true
         -- Code executed when the touch is moved over the object
         if touch_start == nil then
             return true
@@ -361,16 +368,22 @@ function touchlistener(event)
 
     elseif ( event.phase == "ended" ) then
         -- Code executed when the touch lifts off the object
-        print( "touch ended on object ", event.target.type)
+        print( "touch ended on object ", event.target.type, move_flag)
         if touch_start == nil then
             return true
         end
-        print("fsdfsdfsd",checkIfAlreadyHasCable(toch_last))
+        if move_flag == false then
+            print("clicked, without moving")
+            -- return true
+        end
+        print("deb1",checkIfAlreadyHasCable(toch_last))
         if event.target.type < 1 or event.target.type == 1 or city_elements[touch_last].index == city_elements[touch_start].index
          or checkIfAlreadyHasCable(touch_last,false) ~= false then
+            print("deb2",checkIfAlreadyHasCable(toch_last))
             cleanuppath()
             return true
         end
+        print("deb3",checkIfAlreadyHasCable(toch_last))
         addPath()
     end
     return true
@@ -462,9 +475,10 @@ end
 function updateMoneyPointsFromCustomers()
     --money and points depends on cable type
     for i,cabl in ipairs(cables) do
+        print("DEBUG",i,cabl,cabl.name)
         if cabl then
-            money = money + getFieldFromCable(cabl["name"],"payment")
-            points = points + getFieldFromCable(cabl["name"],"points")
+            money = money + getFieldFromCable(cabl.name,"payment")
+            points = points + getFieldFromCable(cabl.name,"points")
         end
     end
 
