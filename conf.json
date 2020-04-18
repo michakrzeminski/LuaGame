@@ -1,0 +1,85 @@
+{
+    "init_money": 200,
+    "init_tile_size": 30,
+    "cables": [
+        {
+            "name": "white",
+            "level": 1,
+            "cost": 10,
+            "points_init": 10,
+            "points": 1,
+            "possibilities": ["house"]
+        },
+        {
+            "name": "yellow",
+            "level": 2,
+            "cost": 15,
+            "points_init": 15,
+            "points": 2,
+            "possibilities": ["house"]
+        },
+        {
+            "name": "red",
+            "level": 3,
+            "cost": 20,
+            "points_init": 20,
+            "points": 3,
+            "possibilities": ["house","bloc"]
+        },
+        {
+            "name": "green",
+            "level": 4,
+            "cost": 25,
+            "points_init": 25,
+            "points": 4,
+            "possibilities": ["house","bloc"]
+        },
+        {
+            "name": "blue",
+            "level": 5,
+            "cost": 30,
+            "points_init": 30,
+            "points": 5,
+            "possibilities": ["house","bloc","sky"]
+        },
+        {
+            "name": "brown",
+            "level": 6,
+            "cost": 40,
+            "points_init": 40,
+            "points": 6,
+            "possibilities": ["house","bloc","sky"]
+        },
+        {
+            "name": "black",
+            "level": 7,
+            "cost": 50,
+            "points_init": 50,
+            "points": 7,
+            "possibilities": ["house","bloc","sky"]
+        }
+    ],
+    "init_city": {
+        "columns": 10,
+        "rows" : 17,
+        "map":[
+            0.1,0,0.1,0,0.1,0,0.1,0,0.1,0,
+            0.2,1,0.2,1,0.2,1,0.2,1,0.2,1,
+            0.1,0,0.1,0,0.1,0,0.1,0,0.1,0,
+            0.2,1,0.2,1,0.2,1,0.2,1,0.2,1,
+            0.1,0,0.1,0,0.1,0,0.1,0,0.1,0,
+            0.2,1,0.2,1,0.2,1,0.2,1,0.2,1,
+            0.1,0,0.1,0,0.1,0,0.1,0,0.1,0,
+            0.2,1,0.2,2,0.2,1,0.2,2,0.2,1,
+            0.1,0,0.1,0,0.1,0,0.1,0,0.1,0,
+            0.2,1,0.2,1,0.2,5,0.2,1,0.2,1,
+            0.1,0,0.1,0,0.1,0,0.1,0,0.1,0,
+            0.2,2,0.2,1,0.2,1,0.2,1,0.2,1,
+            0.1,0,0.1,0,0.1,0,0.1,0,0.1,0,
+            0.2,1,0.2,1,0.2,1,0.2,1,0.2,1,
+            0.1,0,0.1,0,0.1,0,0.1,0,0.1,0,
+            0.2,1,0.2,1,0.2,1,0.2,1,0.2,1,
+            0.1,0,0.1,0,0.1,0,0.1,0,0.1,0
+        ]
+    }
+}

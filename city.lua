@@ -5,21 +5,18 @@
 -----------------------------------------------------------------------------------------
 
 local composer = require( "composer" )
+local Json = require("json")
 require( "element" )
 local scene = composer.newScene()
 
 local sceneGroup = nil
-
--- include Corona's "physics" library
-local physics = require "physics"
-
 --------------------------------------------
 
 -- forward declarations and other locals
 
 local screenW, screenH, halfW = display.actualContentWidth, display.actualContentHeight, display.contentCenterX
 
-local city_elements = nil
+local city_elements = {}
 local cables = nil
 
 local touch_start, touch_end = nil,nil
@@ -29,10 +26,10 @@ local touch_path = {}
 
 local clock = os.clock
 
-local tile_size = 30
+local tile_size = 0
 
 -- starting amount of money
-local money = 200
+local money = 0
 local cable_cost = 10
 local money_text = nil
 local customer_payment = 10
@@ -347,59 +344,10 @@ function touchlistener(event)
     return true
 end
 
-function scene:create( event )
-   
-    -- first we need variables to store the citymap
+function generateCity(cityjson)
 
-    sceneGroup = self.view
-
-    -- We need physics started to add bodies, but we don't want the simulaton
-	-- running until the scene is on the screen.
-	physics.start()
-    physics.pause()
-    
-	-- local background = display.newRect( display.screenOriginX, display.screenOriginY, screenW, screenH )
-	local background = display.newImageRect( "graphics/field.png", screenW, screenH )
-	background.anchorX = 0
-	background.anchorY = 0
-	background.x = 0 + display.screenOriginX 
-    background.y = 0 + display.screenOriginY
-    
-    sceneGroup:insert( background )
-
-    -- bottom rect with actual selected cable
-    local actual_cable_button = display.newImageRect( "graphics/button-over.png", 50, 30 )
-	actual_cable_button.x = screenW - 30
-    actual_cable_button.y = screenH - 60
-    actual_cable_button:addEventListener( "touch", enableMenuListener )
-    
-    sceneGroup:insert( actual_cable_button )
-
-    system.activate( "multitouch" )
-    
-    cables = {} -- cable need to have start, end and path, also type
-
-    city_elements = {}
     -- field 1 house 2, bloc 3, street 0, hq 5
-    local citymap = {
-                     0.1,0,0.1,0,0.1,0,0.1,0,0.1,0,
-                     0.2,1,0.2,1,0.2,1,0.2,1,0.2,1,
-                     0.1,0,0.1,0,0.1,0,0.1,0,0.1,0,
-                     0.2,1,0.2,1,0.2,1,0.2,1,0.2,1,
-                     0.1,0,0.1,0,0.1,0,0.1,0,0.1,0,
-                     0.2,1,0.2,1,0.2,1,0.2,1,0.2,1,
-                     0.1,0,0.1,0,0.1,0,0.1,0,0.1,0,
-                     0.2,1,0.2,2,0.2,1,0.2,3,0.2,1,
-                     0.1,0,0.1,0,0.1,0,0.1,0,0.1,0,
-                     0.2,1,0.2,2,0.2,5,0.2,1,0.2,1,
-                     0.1,0,0.1,0,0.1,0,0.1,0,0.1,0,
-                     0.2,2,0.2,1,0.2,1,0.2,2,0.2,1,
-                     0.1,0,0.1,0,0.1,0,0.1,0,0.1,0,
-                     0.2,1,0.2,1,0.2,1,0.2,1,0.2,1,
-                     0.1,0,0.1,0,0.1,0,0.1,0,0.1,0,
-                     0.2,1,0.2,1,0.2,1,0.2,1,0.2,1,
-                     0.1,0,0.1,0,0.1,0,0.1,0,0.1,0,
-                    }
+    local citymap = cityjson["map"]
 
     offset = 25
     curr_x, curr_y = offset, 0
@@ -437,8 +385,46 @@ function scene:create( event )
             curr_y = curr_y + iter
         end
     end
+end
 
-    refreshScene()
+function scene:create( event )
+   
+    -- first we need variables to store the citymap
+
+    sceneGroup = self.view
+
+	-- local background = display.newRect( display.screenOriginX, display.screenOriginY, screenW, screenH )
+	local background = display.newImageRect( "graphics/field.png", screenW, screenH )
+	background.anchorX = 0
+	background.anchorY = 0
+	background.x = 0 + display.screenOriginX 
+    background.y = 0 + display.screenOriginY
+    
+    sceneGroup:insert( background )
+
+    -- bottom rect with actual selected cable
+    local actual_cable_button = display.newImageRect( "graphics/button-over.png", 50, 30 )
+	actual_cable_button.x = screenW - 30
+    actual_cable_button.y = screenH - 60
+    actual_cable_button:addEventListener( "touch", enableMenuListener )
+    
+    sceneGroup:insert( actual_cable_button )
+    
+    cables = {} -- cable need to have start, end and path, also type
+
+    local file = io.open("C:\\LuaGame\\conf.json", "rb")
+
+    if file then
+        -- read all contents of file into a string
+        local contents = file:read( "*a" )
+        jsonfile = Json.decode(contents);
+        io.close( file )
+        
+        money = jsonfile["init_money"]
+        tile_size = jsonfile["init_tile_size"]
+        generateCity(jsonfile["init_city"])
+        refreshScene()
+    end
 end
 
 function updateMoneyFromCustomers()
@@ -529,8 +515,6 @@ function scene:show( event )
         timer.performWithDelay(1000*10, updateMoneyFromCustomers, 0)     
         timer.performWithDelay(1000*20, updateCity, 0)
 
-        physics.start()
-
         menu_slide_panel()
 	end
 end
@@ -563,7 +547,6 @@ function scene:hide( event )
 		--
 		-- INSERT code here to pause the scene
 		-- e.g. stop timers, stop animation, unload sounds, etc.)
-		physics.stop()
 	elseif phase == "did" then
 		-- Called when the scene is now off screen
 	end	
@@ -577,9 +560,6 @@ function scene:destroy( event )
 	-- INSERT code here to cleanup the scene
 	-- e.g. remove display objects, remove touch listeners, save state, etc.
 	local sceneGroup = self.view
-	
-	package.loaded[physics] = nil
-	physics = nil
 end
 
 ---------------------------------------------------------------------------------

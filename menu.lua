@@ -39,7 +39,7 @@ function scene:create( event )
 	background.y = 0 + display.screenOriginY
 	
 	-- create/position logo/title image on upper-half of the screen
-	local titleLogo = display.newImageRect( "logo.png", 264, 42 )
+	local titleLogo = display.newImageRect( "logo.png", 223, 42 )
 	titleLogo.x = display.contentCenterX
 	titleLogo.y = 100
 	
@@ -47,13 +47,11 @@ function scene:create( event )
 	playBtn = widget.newButton{
 		label="Play Now",
 		labelColor = { default={255}, over={128} },
-		default="button.png",
-		over="button-over.png",
 		width=154, height=40,
 		onRelease = onPlayBtnRelease	-- event listener function
 	}
 	playBtn.x = display.contentCenterX
-	playBtn.y = display.contentHeight - 125
+	playBtn.y = display.contentHeight - 200
 	
 	-- all display objects must be inserted into group
 	sceneGroup:insert( background )
