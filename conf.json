@@ -1,59 +1,118 @@
 {
     "init_money": 200,
     "init_tile_size": 30,
+    "levelingup": 
+    [
+        0,
+        100,
+        250,
+        400,
+        600,
+        800,
+        1000
+    ],
     "cables": [
         {
             "name": "white",
+            "color": {
+                "r": 0.85,
+                "g": 0.95,
+                "b": 0.95,
+                "a": 1
+            },
             "level": 1,
             "cost": 10,
+            "payment": 10,
             "points_init": 10,
             "points": 1,
             "possibilities": ["house"]
         },
         {
             "name": "yellow",
+            "color": {
+                "r": 1,
+                "g": 1,
+                "b": 0,
+                "a": 1
+            },
             "level": 2,
             "cost": 15,
+            "payment": 15,
             "points_init": 15,
             "points": 2,
             "possibilities": ["house"]
         },
         {
             "name": "red",
+            "color": {
+                "r": 1,
+                "g": 0,
+                "b": 0,
+                "a": 1
+            },
             "level": 3,
             "cost": 20,
+            "payment": 20,
             "points_init": 20,
             "points": 3,
             "possibilities": ["house","bloc"]
         },
         {
             "name": "green",
+            "color": {
+                "r": 0,
+                "g": 1,
+                "b": 0,
+                "a": 1
+            },
             "level": 4,
             "cost": 25,
+            "payment": 25,
             "points_init": 25,
             "points": 4,
             "possibilities": ["house","bloc"]
         },
         {
             "name": "blue",
+            "color": {
+                "r": 0,
+                "g": 0,
+                "b": 1,
+                "a": 1
+            },
             "level": 5,
             "cost": 30,
+            "payment": 30,
             "points_init": 30,
             "points": 5,
             "possibilities": ["house","bloc","sky"]
         },
         {
             "name": "brown",
+            "color": {
+                "r": 0.2,
+                "g": 0,
+                "b": 0,
+                "a": 1
+            },
             "level": 6,
             "cost": 40,
+            "payment": 40,
             "points_init": 40,
             "points": 6,
             "possibilities": ["house","bloc","sky"]
         },
         {
             "name": "black",
+            "color": {
+                "r": 0,
+                "g": 0,
+                "b": 0,
+                "a": 1
+            },
             "level": 7,
             "cost": 50,
+            "payment": 50,
             "points_init": 50,
             "points": 7,
             "possibilities": ["house","bloc","sky"]

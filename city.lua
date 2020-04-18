@@ -28,15 +28,23 @@ local clock = os.clock
 
 local tile_size = 0
 
+-- json configuration file
+local jsonfile = nil
+
 -- starting amount of money
 local money = 0
+-- starting points
+local points = 0
+
 local cable_cost = 10
 local money_text = nil
+local points_text = nil
 local customer_payment = 10
 
--- cables deefinitions
+-- cables definitions
 local actual_cable = nil
 
+local current_lvl = 1
 
 function updateCity()
     picked = city_elements[ math.random( #city_elements ) ]
@@ -99,15 +107,11 @@ function drawCable(cab_id,last_x,last_y,path,elem, start, i_end)
     end
 
     local new_cable = display.newLine(last_x,last_y,end_point_x,end_point_y)
-    if actual_cable == "cyan" then
-        new_cable:setStrokeColor(0.1, 0.8, 1,1) -- cyan like
-    elseif actual_cable == "green" then
-        new_cable:setStrokeColor(0.1, 1, 0.1,1) -- light green
-    elseif actual_cable == "pink" then
-        new_cable:setStrokeColor(1, 0.2, 1,1) -- pink
-    end
+    local color = getFieldFromCable(actual_cable,"color")
+    new_cable:setStrokeColor(color["r"],color["g"],color["b"],color["a"])
     new_cable.strokeWidth = 4
     cables[cab_id].vis[start] = new_cable
+    cables[cab_id].name = actual_cable
     return end_point_x, end_point_y
 end
 
@@ -158,12 +162,18 @@ function coinAnim()
     end 
 end
 
-function updateMoneyVisual()
+function updateMoneyPointsVisual()
     if money_text then
         money_text:removeSelf()
     end
-    money_text = display.newText(money,halfW, screenH-60)
+    money_text = display.newText(money,halfW+60, screenH-60)
     money_text:setFillColor(0,0,0,1)
+
+    if points_text then
+        points_text:removeSelf()
+    end
+    points_text = display.newText(points,halfW-60, screenH-60)
+    points_text:setFillColor(0,0,0,1)
 end
 
 function refreshScene()
@@ -197,14 +207,39 @@ end
 
 function discardMoney(touch_path)
     money_old = money
-    money = money - #touch_path*cable_cost
+    money = money - #touch_path*getFieldFromCable(actual_cable,"cost")
     if money < 0 then
         money = money_old
         return false
     end
     print("Money status after construction", money)
-    updateMoneyVisual()
+    points = points + getFieldFromCable(actual_cable,"points_init")
+    print("Points also need to go up",points)
+    checkLevelUp()
+    updateMoneyPointsVisual()
     return true
+end
+
+function checkLevelUp()
+    if current_lvl < 7 then
+        threshold = jsonfile["levelingup"][current_lvl+1]
+        print("Checking if to level up",current_lvl,points,threshold)
+        if points >= threshold then
+            print("Level up")
+            --TODO cool animation
+            current_lvl = current_lvl + 1
+            menu_slide_panel()
+        end
+    end
+end
+
+function getFieldFromCable(cabl,field)
+    local cables_type = jsonfile["cables"]
+    for i,cab in ipairs(cables_type) do
+        if cab["name"] == cabl then
+            return cab[field]
+        end
+    end
 end
 
 function addPath()
@@ -263,10 +298,7 @@ function taplistener(event)
     if event.numTaps == 2 then
         i = checkIfAlreadyHasCable(event.target.index, true) 
         if i ~= false then
-            print("dadassdfsdf",i)
-            print("as",cables[i].vis)
             for i,elem in ipairs(cables[i].vis) do
-                print("as",i,elem)
                 elem:removeSelf()
             end
             cables[i] = nil
@@ -304,7 +336,7 @@ function touchlistener(event)
             return true
         end
         if event.target.index ~= touch_last then
-            -- TODO check the path if already not been here and do not add to path or just stop
+            -- check the path if already not been here and do not add to path or just stop
 
             if #touch_path > 1 then
                 if city_elements[touch_last].type == 2 or city_elements[touch_last].type == 3 or city_elements[touch_last].type == 5 then
@@ -427,25 +459,29 @@ function scene:create( event )
     end
 end
 
-function updateMoneyFromCustomers()
-    -- TODO check customers count and add theirs money
-    -- TO CHANGE for now customers there will be number of cables
-    money = money + #cables*customer_payment
+function updateMoneyPointsFromCustomers()
+    --money and points depends on cable type
+    for i,cabl in ipairs(cables) do
+        if cabl then
+            money = money + getFieldFromCable(cabl["name"],"payment")
+            points = points + getFieldFromCable(cabl["name"],"points")
+        end
+    end
+
+    checkLevelUp()
     print("Money status", money)
-    updateMoneyVisual()
+    updateMoneyPointsVisual()
     coinAnim()
 end
 
 function menu_slide_panel()
-
-    --TODO change panel to have smth relevant and to show/hide on slide from user/button
     inv_panel.background = display.newRect( 0, 0, inv_panel.width, inv_panel.height )
     inv_panel.background:setFillColor( 0, 0.25, 0.5 )
     inv_panel.background:addEventListener( "touch", menuTouchListener )
     inv_panel:insert( inv_panel.background )
 
     y_shift = 30
-    y = 0
+    y = -inv_panel.height/2 + offset
     -- title menu
     inv_panel.title = display.newText( "menu", 0, y, native.systemFontBold, 18 )
     inv_panel.title:setFillColor( 1, 1, 1 )
@@ -459,47 +495,43 @@ function menu_slide_panel()
     y = y+y_shift
 
     --cables
-    inv_panel.cables = display.newText( "cables", 0, y, native.systemFont, 12 )
+    inv_panel.cables = display.newText( "Cable types", 0, y, native.systemFont, 12 )
     inv_panel.cables:setFillColor( 1, 1, 1 )
     inv_panel:insert( inv_panel.cables )
     y = y+y_shift
 
-    inv_panel.cable = display.newRect(0,y,20,10)
-    inv_panel.cable.name = "cyan"
-    inv_panel.cable:setFillColor(0.1, 0.8, 1,1) -- cyan like
-    inv_panel.cable:addEventListener( "touch", menuCableTouchListener )
-    inv_panel:insert( inv_panel.cable )
-    y = y+y_shift
-
-    inv_panel.cable2 = display.newRect(0,y,20,10)
-    inv_panel.cable2.name = "pink"
-    inv_panel.cable2:setFillColor(1, 0.2, 1,1) -- pink
-    inv_panel.cable2:addEventListener( "touch", menuCableTouchListener )
-    inv_panel:insert( inv_panel.cable2 )
-    y = y+y_shift
-
-    inv_panel.cable3 = display.newRect(0,y,20,10)
-    inv_panel.cable3.name = "green"
-    inv_panel.cable3:setFillColor(0.1, 1, 0.1,1) -- light green
-    inv_panel.cable3:addEventListener( "touch", menuCableTouchListener )
-    inv_panel:insert( inv_panel.cable3 )
-    y = y+y_shift
-
-    -- sceneGroup:insert( inv_panel )
-    -- inv_panel:toFront()
+    -- go throught conf file and get as many as current level permit
+    local cables_type = jsonfile["cables"]
+    for i,elem in ipairs(cables_type) do
+        if elem["level"] <= current_lvl then
+            inv_panel.cable = display.newRect(0,y,20,10)
+            inv_panel.cable.name = elem["name"]
+            inv_panel.cable:setFillColor(elem["color"]["r"], elem["color"]["g"], elem["color"]["b"],elem["color"]["a"])
+            inv_panel.cable:addEventListener( "touch", menuCableTouchListener )
+            inv_panel:insert( inv_panel.cable )
+            y = y+y_shift
+        end
+    end
 end
 
 function actualCable(name)
     actual_cable = name
     local cable_preview = display.newLine(screenW - 45,screenH - 60,screenW-15,screenH - 60)
-    if name == "cyan" then
-        cable_preview:setStrokeColor(0.1, 0.8, 1,1) -- cyan like
-    elseif name == "green" then
-        cable_preview:setStrokeColor(0.1, 1, 0.1,1) -- light green
-    elseif name == "pink" then
-        cable_preview:setStrokeColor(1, 0.2, 1,1) -- pink
-    end
+    local color = getFieldFromCable(actual_cable,"color")
+    cable_preview:setStrokeColor(color["r"],color["g"],color["b"],color["a"])
     cable_preview.strokeWidth = 4
+end
+
+function bottom_Panel() 
+    actualCable("white")
+
+    points_labal= display.newText("Points:",halfW-120, screenH-60)
+    points_labal:setFillColor(0,0,0,1)
+
+    money_labal= display.newText("Money:",halfW, screenH-60)
+    money_labal:setFillColor(0,0,0,1)
+
+    updateMoneyPointsVisual()
 end
 
 function scene:show( event )
@@ -509,13 +541,11 @@ function scene:show( event )
 	if phase == "will" then
 		-- Called when the scene is still off screen and is about to move on screen
     elseif phase == "did" then
-        actualCable("cyan")
-        updateMoneyVisual()
-
-        timer.performWithDelay(1000*10, updateMoneyFromCustomers, 0)     
-        timer.performWithDelay(1000*20, updateCity, 0)
-
+        bottom_Panel()
         menu_slide_panel()
+
+        timer.performWithDelay(1000*10, updateMoneyPointsFromCustomers, 0)     
+        timer.performWithDelay(1000*20, updateCity, 0)
 	end
 end
 
@@ -531,7 +561,7 @@ end
 
 function menuCableTouchListener(event)
     print("Touched cable in menu", event.target.name)
-    -- TODO set actual cable
+    -- set actual cable
     actualCable(event.target.name)
     inv_panel:hide()
     return true
