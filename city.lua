@@ -408,14 +408,14 @@ function touchlistener(event)
             print("clicked, without moving")
             -- return true
         end
-        print("deb1",checkIfAlreadyHasCable(toch_last))
+        -- print("deb1",checkIfAlreadyHasCable(toch_last))
         if event.target.type < 1 or event.target.type == 1 or city_elements[touch_last].index == city_elements[touch_start].index
          or checkIfAlreadyHasCable(touch_last,false) ~= false then
-            print("deb2",checkIfAlreadyHasCable(toch_last))
+            -- print("deb2",checkIfAlreadyHasCable(toch_last))
             cleanuppath()
             return true
         end
-        print("deb3",checkIfAlreadyHasCable(toch_last))
+        -- print("deb3",checkIfAlreadyHasCable(toch_last))
         addPath()
     end
     return true
@@ -489,7 +489,8 @@ function scene:create( event )
     
     cables = {} -- cable need to have start, end and path, also type
 
-    local file = io.open("C:\\LuaGame\\conf.json", "rb")
+    local path = system.pathForFile( "conf.json", system.ResourceDirectory )
+    local file = io.open(path, "rb")
 
     if file then
         -- read all contents of file into a string
