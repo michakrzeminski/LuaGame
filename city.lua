@@ -46,6 +46,35 @@ local actual_cable = "white"
 
 local current_lvl = 1
 
+local moveQueue = {}
+
+function moveOnPath(item,i)
+    print(i,moveQueue[i])
+    local obj = table.remove(moveQueue[item.index])
+    if obj then
+        transition.moveTo(item, {x=obj.x, y=obj.y, time=500, onComplete=moveOnPath})
+    end
+end
+
+function updateTraffic()
+    -- create an icon corresponding to a type of cable that will move along the cable from start to hq
+    moveQueue = {}
+    for i, cable in ipairs(cables) do
+        moveQueue[i] = {}
+    end
+
+    for i, cable in ipairs(cables) do
+        local item = display.newRect(city_elements[cable[#cable]].x,city_elements[cable[#cable]].y, 10, 10)
+        item:setFillColor( 0, 0, 0 )
+        item.index = i
+        sceneGroup:insert(item)
+        for _, elem in ipairs(cable) do
+            table.insert( moveQueue[i], {x=city_elements[elem].x, y=city_elements[elem].y} )
+        end
+        moveOnPath(item)
+    end
+end
+
 function updateCity()
     picked = city_elements[ math.random( #city_elements ) ]
     retry_counter = 0
@@ -593,6 +622,7 @@ function scene:show( event )
 
         timer.performWithDelay(1000*10, updateMoneyPointsFromCustomers, 0)     
         timer.performWithDelay(1000*20, updateCity, 0)
+        timer.performWithDelay(1000*5, updateTraffic, 0)
 	end
 end
 
