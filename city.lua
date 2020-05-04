@@ -48,30 +48,46 @@ local current_lvl = 1
 
 local moveQueue = {}
 
-function moveOnPath(item,i)
-    print(i,moveQueue[i])
-    local obj = table.remove(moveQueue[item.index])
+function moveOnPath(item)
+    local obj = table.remove(moveQueue[item.index][item.var])
     if obj then
-        transition.moveTo(item, {x=obj.x, y=obj.y, time=500, onComplete=moveOnPath})
+        if obj.index == item.len then
+            transition.moveTo(item, {x=obj.x, y=obj.y, delay=item.delay, time=item.speed, onComplete=moveOnPath})
+            print("withdelay",obj.x,obj.y, obj.index, item.len,item.delay)
+        else
+            transition.moveTo(item, {x=obj.x, y=obj.y, delay=0, time=item.speed, onComplete=moveOnPath})
+        end 
     end
+    -- TODO clear the item Rect after transition ended
 end
+
+tmep_items_traffic = {}
 
 function updateTraffic()
     -- create an icon corresponding to a type of cable that will move along the cable from start to hq
     moveQueue = {}
     for i, cable in ipairs(cables) do
         moveQueue[i] = {}
+        for var=1, getFieldFromCable(cable.name,"level") do
+            moveQueue[i][var] = {}
+        end
     end
 
     for i, cable in ipairs(cables) do
-        local item = display.newRect(city_elements[cable[#cable]].x,city_elements[cable[#cable]].y, 10, 10)
-        item:setFillColor( 0, 0, 0 )
-        item.index = i
-        sceneGroup:insert(item)
-        for _, elem in ipairs(cable) do
-            table.insert( moveQueue[i], {x=city_elements[elem].x, y=city_elements[elem].y} )
+        for var=1, getFieldFromCable(cable.name,"level") do 
+            local item = display.newRect(city_elements[cable[#cable]].x,city_elements[cable[#cable]].y, 10, 10)
+            item:setFillColor( 0, 0, 0 )
+            item.index = i
+            item.var = var
+            item.speed = getFieldFromCable(cable.name,"traffic_speed")
+            item.delay = var*(item.speed/3)
+            item.len = #cable
+            sceneGroup:insert(item)
+            for j, elem in ipairs(cable) do
+                table.insert( moveQueue[i][var], {x=city_elements[elem].x, y=city_elements[elem].y, index=j} )
+            end
+            moveOnPath(item)
         end
-        moveOnPath(item)
     end
 end
 
@@ -165,7 +181,7 @@ end
 
 function spriteListener2(event)
     print("sdfsdfd")
-    if event.target.frame == 9 then
+    if event.target.frame == 8 then
         print("sdfsdfdw",event)
         event.target:removeSelf()
     end
@@ -182,7 +198,7 @@ function levelupAnim()
 
     local sequenceData = {
         {
-            name = "normal", start=1, count=9, time=2000, loopCount=1
+            name = "normal", start=1, count=8, time=2000, loopCount=1
         }
     }
 
@@ -622,7 +638,7 @@ function scene:show( event )
 
         timer.performWithDelay(1000*10, updateMoneyPointsFromCustomers, 0)     
         timer.performWithDelay(1000*20, updateCity, 0)
-        timer.performWithDelay(1000*5, updateTraffic, 0)
+        timer.performWithDelay(1000*10, updateTraffic, 0)
 	end
 end
 
